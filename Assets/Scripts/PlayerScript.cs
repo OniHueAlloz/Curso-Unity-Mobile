@@ -21,6 +21,7 @@ public class PlayerScript : MonoBehaviour
     public float ForcaPulo;
     public float Velocidade;
     private float h, v;
+    private bool Envenenado;
 
     [Header("Controle Zoom")]
     public float ZoomMaximo;
@@ -264,6 +265,35 @@ public class PlayerScript : MonoBehaviour
     public void BotaoY()
     {
         MenuBotao = true;
+    }
+
+    void OnTriggerEnter2D (Collider2D other)
+    {
+        if (other.CompareTag("Veneno"))
+        {
+            PlayerAnimator.SetBool("Poison", true);
+
+            other.gameObject.SetActive(false);
+        }
+
+        if (other.CompareTag("Coletavel"))
+        {
+            PlayerAnimator.SetBool("Poison", false);
+            PlayerAnimator.SetTrigger("Item");
+
+            other.gameObject.SetActive(false);
+
+            StartCoroutine(CongelarPlayer());
+        }
+    }
+
+    IEnumerator CongelarPlayer()
+    {
+        PlayerRigidbody.constraints = RigidbodyConstraints2D.FreezeAll;
+
+        yield return new WaitForSeconds(PlayerAnimator.GetCurrentAnimatorStateInfo(0).length);
+
+        PlayerRigidbody.constraints = RigidbodyConstraints2D.None;
     }
 
 }
