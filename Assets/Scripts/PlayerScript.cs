@@ -24,14 +24,20 @@ public class PlayerScript : MonoBehaviour
     private bool Envenenado;
 
     [Header("Controle Zoom")]
-    public float ZoomMaximo;
-    public float ZoomMinimo;
-    public float ZoomPadrao;
-    public float PassoZoom;
+    public float ZoomMaximo = 10f;
+    public float ZoomMinimo = 2f;
+    public float ZoomPadrao = 5f;
+    public float PassoZoom = 0.15f;
     private float ZoomAtual;
     public float TempoEntreMaximoMinimo;
     private float FPS;
     public CinemachineVirtualCamera VirtualCamera;
+    public float LimiteToqueDuplo = 0.5f;
+    private float TempoToque = 0f;
+    public float LimitePinca = 0.1f; 
+    private Vector2 Toque1;
+    private Vector2 Toque2;
+    private float DistanciaToque;
 
     [Header("Head-Up Display")]
     public Sprite[] DPAD_Sprites;
@@ -64,6 +70,8 @@ public class PlayerScript : MonoBehaviour
         DetectarTeclado();
 
         DetectarTouch();
+
+        DetectarToqueDuplo();
 
         FPS = 1 / Time.deltaTime;
         // print(Time.time + " FPS = " + FPS);
@@ -181,9 +189,15 @@ public class PlayerScript : MonoBehaviour
         VirtualCamera.m_Lens.OrthographicSize = ZoomAtual;
     }
 
+    public void ResetZoom()
+    {
+        VirtualCamera.m_Lens.OrthographicSize = ZoomPadrao;
+    }
+
     private void DetectarTouch()
     {
         // print(Time.time + " Dedos sobre a tela = " + Input.touchCount);
+        
         if (Input.touchCount > 0) 
         {
             for (int i = 0; i < Input.touchCount; i++)
@@ -244,6 +258,94 @@ public class PlayerScript : MonoBehaviour
                     }
                 }
             
+            }
+        }
+    }
+
+    private void DetectarToqueDuplo() 
+    {
+        if (Input.touchCount == 1)
+        {
+            Touch touch = Input.GetTouch(0);
+
+            Cursor.position = Camera.main.ScreenToWorldPoint(new Vector3(touch.position.x, touch.position.y, 1));
+
+            if (touch.phase == TouchPhase.Ended)
+            {
+                if (Time.time - TempoToque <= LimiteToqueDuplo)
+                {
+                    ResetZoom();
+                }
+
+                TempoToque = Time.time;
+            }
+            else if (touch.phase == TouchPhase.Stationary || touch.phase == TouchPhase.Moved)
+            {
+                idFinger = 0;
+
+                x = touch.position.x - DPAD_x;
+                y = touch.position.y - DPAD_y;
+
+                RaioMomentaneo = Mathf.Sqrt(x * x + y * y);
+
+                if (RaioMomentaneo < RaioMaximo)
+                {
+                    if (RaioMomentaneo < RaioMinimo)
+                    {
+                        h = 0;
+                        v = 0;
+                    }
+                    else
+                    {   
+                        if (Mathf.Abs(x) > Mathf.Abs(y))
+                        {
+                            h = x > 0 ? 1 : -1;
+                        }
+                        else
+                        {
+                            v = y > 0 ? 1 : -1;
+                        }
+                    }
+                }
+                else if (touch.phase == TouchPhase.Ended && idFinger == 0)
+                {
+                    h = 0;
+                    v = 0;
+                }
+            }
+        }
+        else if (Input.touchCount == 2)
+        {
+            Touch toque1 = Input.GetTouch(0);
+            Touch toque2 = Input.GetTouch(1);
+
+            Vector2 toque1Atual = toque1.position;
+            Vector2 toque2Atual = toque2.position;
+
+            if (toque1.phase == TouchPhase.Began || toque2.phase == TouchPhase.Began)
+            {
+                Toque1 = toque1.position;
+                Toque2 = toque2.position;
+                DistanciaToque = Vector2.Distance(Toque1, Toque2);
+            }
+            else if (toque1.phase == TouchPhase.Moved || toque2.phase == TouchPhase.Moved)
+            {
+                float distanciaAtual = Vector2.Distance(toque1Atual, toque2Atual);
+                float deltaDistancia = distanciaAtual - DistanciaToque;
+
+                if (Mathf.Abs(deltaDistancia) > LimitePinca)
+                {
+                    if (deltaDistancia > 0)
+                    {
+                        ZoomIn();
+                    }
+                    else
+                    {
+                        ZoomOut();
+                    }
+
+                    DistanciaToque = distanciaAtual;
+                }
             }
         }
     }
