@@ -395,7 +395,7 @@ public class PlayerScript : MonoBehaviour
 
         yield return new WaitForSeconds(PlayerAnimator.GetCurrentAnimatorStateInfo(0).length);
 
-        PlayerRigidbody.constraints = RigidbodyConstraints2D.None;
+        PlayerRigidbody.constraints = RigidbodyConstraints2D.FreezeRotation;
     }
 
 }
