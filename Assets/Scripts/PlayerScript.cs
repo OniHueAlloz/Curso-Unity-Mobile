@@ -1,6 +1,7 @@
 using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.U2D;
 
@@ -8,7 +9,7 @@ public class PlayerScript : MonoBehaviour
 {
     [Header("Controles Animacao")]
     public Animator PlayerAnimator;
-    private Rigidbody2D PlayerRigidbody;
+    public Rigidbody2D PlayerRigidbody;
     public Transform DetectorSuperficie;
     public bool SobreSuperficie;
     public LayerMask Plataformas;
@@ -48,9 +49,31 @@ public class PlayerScript : MonoBehaviour
     public Transform Cursor;
     public float RaioMomentaneo, RaioMinimo, RaioMaximo, x, y;
     private int idFinger;
-    private bool JumpBotao, Attack1Botao, Attack2Botao, MenuBotao;
-    
-    
+    private bool JumpBotao, Attack1Botao, Attack2Botao;
+
+    public int StartMoedas;
+    public int StartEnergia;
+    public int StartVidas;
+    public int Moedas;
+    public int Energia;
+    public int Vidas;
+    public TextMeshProUGUI DisplayMoedas;
+    public TextMeshProUGUI DisplayEnergia;
+    public TextMeshProUGUI DisplayVidas;
+
+    [Header("Interacao")]
+    public Vector2 Sentido = new Vector2();
+    public LayerMask Interacao; 
+    public Transform DetectorMao;   
+
+    [Header("Menu")]
+    public bool MenuTeclado; 
+    public bool MenuBotao;
+    public GameObject Menu;
+    public GameObject Pagina1;
+    public GameObject Pagina2;
+    public GameObject Pagina3;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -62,6 +85,14 @@ public class PlayerScript : MonoBehaviour
         Delimitador_x = Camera.main.WorldToScreenPoint(Delimitador.position).x;
         RaioMaximo = Delimitador_x - DPAD_x;
         RaioMinimo = 0.15f * RaioMaximo;
+
+        Moedas = StartMoedas;
+        Vidas = StartVidas;
+        Energia = StartEnergia;
+
+        DisplayMoedas.text = Moedas.ToString();
+        DisplayEnergia.text = Energia.ToString();
+        DisplayVidas.text = Vidas.ToString();
     }
 
     // Update is called once per frame
@@ -72,6 +103,24 @@ public class PlayerScript : MonoBehaviour
         DetectarTouch();
 
         DetectarToqueDuplo();
+
+        if (MenuBotao || MenuTeclado)
+        {
+            MenuBotao = false;
+            if (Menu.activeSelf)
+            {
+                Menu.SetActive(false);
+            }
+            else 
+            {
+                Menu.SetActive(true);
+            }
+        }
+
+        if (Menu.activeSelf)
+        {
+            return;
+        }
 
         FPS = 1 / Time.deltaTime;
         // print(Time.time + " FPS = " + FPS);
@@ -102,10 +151,12 @@ public class PlayerScript : MonoBehaviour
             if (h > 0)
             {
                 DPAD.sprite = DPAD_Sprites[2];
+                Sentido = Vector2.right;
             }
             else
             {
                 DPAD.sprite = DPAD_Sprites[4];
+                Sentido = Vector2.left;
             }
             
             if (SobreSuperficie)
@@ -114,12 +165,17 @@ public class PlayerScript : MonoBehaviour
             }
             PlayerRigidbody.transform.localScale = new Vector3(h, 1, 1);
         }
-        else if (v == 0)
+        else
         {
-            DPAD.sprite = DPAD_Sprites[0];
+
             if (SobreSuperficie)
             {
                 idAnimation = 0;
+            }
+
+            if (v == 0)
+            {
+                DPAD.sprite = DPAD_Sprites[0];
             }
         }
 
@@ -135,11 +191,29 @@ public class PlayerScript : MonoBehaviour
         }
         if (Attack1 || Attack1Botao)
         {
+            RaycastHit2D RaioInteracao2 = Physics2D.Raycast(transform.position, Sentido, 0.8f, Interacao); 
+            Debug.DrawRay(transform.position, Sentido * 0.6f, Color.red);
+
+            if(RaioInteracao2)
+            {
+                RaioInteracao2.collider.SendMessage("Interagir", SendMessageOptions.DontRequireReceiver);
+            }
+
             Attack1Botao = false;
             PlayerAnimator.SetTrigger("Attack1");
         }
+
         if (Attack2 || Attack2Botao)
         {
+
+            RaycastHit2D RaioInteracao = Physics2D.Raycast(DetectorMao.position, Sentido, 0.8f, Interacao); 
+            Debug.DrawRay(DetectorMao.position, Sentido * 0.6f, Color.red);
+
+            if(RaioInteracao)
+            {
+                RaioInteracao.collider.SendMessage("Interagir", SendMessageOptions.DontRequireReceiver);
+            }
+
             Attack2Botao = false;
             PlayerAnimator.SetTrigger("Attack2");
         }
@@ -163,7 +237,7 @@ public class PlayerScript : MonoBehaviour
         Jump = Input.GetButtonDown("Jump");
         Attack1 = Input.GetButtonDown("Fire2");
         Attack2 = Input.GetButtonDown("Fire1");
-        Hit = Input.GetButtonDown("Cancel");
+        MenuTeclado = Input.GetButtonDown("Cancel");
         h = Input.GetAxisRaw("Horizontal");
         v = Input.GetAxisRaw("Vertical");
         //print(Time.time + " v = " + v + " h = " + h);
@@ -281,7 +355,7 @@ public class PlayerScript : MonoBehaviour
             }
             else if (touch.phase == TouchPhase.Stationary || touch.phase == TouchPhase.Moved)
             {
-                idFinger = 0;
+                
 
                 x = touch.position.x - DPAD_x;
                 y = touch.position.y - DPAD_y;
@@ -290,6 +364,8 @@ public class PlayerScript : MonoBehaviour
 
                 if (RaioMomentaneo < RaioMaximo)
                 {
+                    idFinger = 0;
+                    
                     if (RaioMomentaneo < RaioMinimo)
                     {
                         h = 0;
@@ -395,7 +471,7 @@ public class PlayerScript : MonoBehaviour
 
         yield return new WaitForSeconds(PlayerAnimator.GetCurrentAnimatorStateInfo(0).length);
 
-        PlayerRigidbody.constraints = RigidbodyConstraints2D.None;
+        PlayerRigidbody.constraints = RigidbodyConstraints2D.FreezeRotation;
     }
 
 }

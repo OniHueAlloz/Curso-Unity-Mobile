@@ -14,9 +14,9 @@ TagManager:
   - Water
   - UI
   - Plataformas
-  - 
-  - 
-  - 
+  - Fundo
+  - InteracaoComPlayer
+  - SemInteracaoComPlayer
   - 
   - 
   - 
@@ -40,9 +40,15 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Cenario Fundo
+    uniqueID: 1817477789
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
   - name: HUD
     uniqueID: 2413575909
+    locked: 0
+  - name: Objetos
+    uniqueID: 4065529367
     locked: 0
